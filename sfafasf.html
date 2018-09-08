@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Reverse Geocoding</title>
+  <style>
+  #map {
+      height: 100%;
+      right: 20%;
+    }
+  html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    #floating-panel {
+          position: absolute;
+          top: 10px;
+          left: 25%;
+          z-index: 5;
+          background-color: #fff;
+          padding: 5px;
+          border: 1px solid #999;
+          text-align: center;
+          font-family: 'Roboto','sans-serif';
+          line-height: 30px;
+          padding-left: 10px;
+        }
+        #floating-panel {
+          position: absolute;
+          top: 5px;
+          left: 50%;
+          margin-left: 80px;
+          width: 350px;
+          z-index: 5;
+          background-color: #fff;
+          padding: 5px;
+          border: 1px solid #999;
+        }
+        #latlng {
+          width: 225px;
+        }
+        #currentlocation {
+          position: absolute;
+          top: 500px;
+          left: 81%;
+          z-index: 5;
+          background-color: #fff;
+          padding: 5px;
+          border: 1px solid #999;
+          text-align: center;
+          font-family: 'Roboto','sans-serif';
+          line-height: 30px;
+          padding-left: 5px;
+        }
+        #fileload {
+          position: absolute;
+          top: 100px;
+          left: 81%;
+          z-index: 5;
+          background-color: #fff;
+          padding: 5px;
+          border: 1px solid #999;
+          text-align: center;
+          font-family: 'Roboto','sans-serif';
+          line-height: 30px;
+          padding-left: 5px;
+        }
+  </style>
+  <script type="text/javascript">
+
+  window.onload = function(){
+
+  	document.getElementById("btnStart").onclick = function(){
+
+  		readFile();
+
+
+
+  	}
+
+  }
+  function readFile(){
+
+  	var file = document.getElementById("file").files[0];
+
+  	//alert(file);
+
+  	document.getElementById("fileName").textContent = file.name;
+
+  	document.getElementById("fileSize").textContent = file.size;
+
+
+
+  	var reader = new FileReader();
+
+  	var encodeList = document.getElementById("encoding");
+
+  	var encoding = encodeList.options[encodeList.selectedIndex].value;
+
+  	reader.readAsText(file, encoding);
+
+
+
+  	reader.onload = function(){
+
+  		var display = document.getElementById("content");
+
+  		display.textContent = reader.result;		// 읽은 파일
+
+  	}
+
+
+
+  	reader.onerror = function(e){
+
+  		alert("읽기 오류:" + e.target.error.code);
+
+  		return;
+
+  	}
+
+  }
+
+  </script>
+</head>
+
+ <body>
+   <h1>GPS추적 프로그램</h1>
+   <div id="floating-panel">
+     <input id="latlng" type="text" value=" ">
+     <input id="submit" type="button" value="GPS좌표 입력">
+     <button onclick="renew()">현재위치갱신</button>
+     <button onclick="lora1()">LORA1에서 받은 위치</button>
+   </div>
+   <div id="map"></div>
+   <div id="currentlocation">
+     <button onclick="getLocation()">사용자 위치를 확인합니다</button>
+   </div>
+   <div id="fileload">
+   <h2>클라이언트 컴의 파일 읽기</h2>
+
+   <input type="file"	id="file">
+
+   <select id="encoding">
+
+   	<option value="utf-8">UTF-8</option>
+
+   	<option value="euc-kr">EUC-KR</option>
+
+   </select>
+
+   <button id="btnStart">읽기</button>
+
+   <br>
+
+   <div>
+
+   	<span id="fileName">파일이름</span>
+
+   	<span id="fileSize">파일크기</span>
+
+   </div>
+
+   <textarea rows="10" cols="50" id="content" readonly="readonly"></textarea>
+ </div>
+
+   <script>
+      function initMap() {
+        var map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 15,
+          center: {lat: 35.243335, lng: 128.693279}
+        });
+        var geocoder = new google.maps.Geocoder;
+        var infowindow = new google.maps.InfoWindow;
+
+        document.getElementById('submit').addEventListener('click', function() {
+          geocodeLatLng(geocoder, map, infowindow);
+        });
+      }
+
+      function geocodeLatLng(geocoder, map, infowindow) {
+        var input = document.getElementById('latlng').value;
+        var latlngStr = input.split(',', 2);
+        var latlng = {lat: parseFloat(latlngStr[0]), lng: parseFloat(latlngStr[1])};
+        geocoder.geocode({'location': latlng}, function(results, status) {
+          if (status === 'OK') {
+            if (results[0]) {
+              map.setZoom(14);
+              var marker = new google.maps.Marker({
+                position: latlng,
+                map: map
+              });
+              infowindow.setContent(results[0].formatted_address);
+              infowindow.open(map, marker);
+            } else {
+              window.alert('No results found');
+            }
+          } else {
+            window.alert('Geocoder failed due to: ' + status);
+          }
+        });
+      }
+
+      var here = document.getElementById("currentlocation");
+
+      function getLocation(){
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(showPosition);
+        }else {
+          here.innerHTML = "현재 위치를 알수 없습니다.";
+          }
+        }
+        function showPosition(position) {
+          here.innerHTML = "현재 나의 위치 <br> Latitude: " + position.coords.latitude.toFixed(6)+
+      "<br>Longitude: " + position.coords.longitude.toFixed(6);
+        }
+
+      function renew(){
+        document.getElementById("latlng").value = here.innerHTML.substring(23,33) +","+ here.innerHTML.substring(48,60);
+       }
+      function lora1(){
+        document.getElementById("latlng").value = document.getElementById("content").value;
+      }
+
+    </script>
+   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDhF6GQOcOtRjRbqMkIJ7PSv-gINhrRxhk&callback=initMap"
+     async defer></script>
+ </body>
+</html>
